@@ -1,0 +1,12 @@
+spring:
+  datasource:
+    driver-class-name: org.postgresql.Driver
+  flyway:
+    enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+app:
+  jwt:
+    secret: testcontainers-secret-should-be-32chars-min

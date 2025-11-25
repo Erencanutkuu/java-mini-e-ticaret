@@ -1,0 +1,29 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-ecommerce_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-123456789}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  app:
+    build: .
+    depends_on:
+      - db
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-local}
+      DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-ecommerce_db}
+      DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
+      DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-123456789}
+    ports:
+      - "${APP_PORT:-8080}:8080"
+
+volumes:
+  db_data: {}

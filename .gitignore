@@ -1,0 +1,26 @@
+target/
+.idea/
+.classpath
+.project
+.settings/
+bin/
+
+*.iml
+*.log
+*.swp
+*.swo
+*.DS_Store
+
+# Maven wrapper (if added later)
+.mvn/
+mvnw
+mvnw.cmd
+
+# Local environment / secrets
+.env
+.env.local
+.env.*.local
+*.env
+
+# Local JDK / tools
+.jdk/

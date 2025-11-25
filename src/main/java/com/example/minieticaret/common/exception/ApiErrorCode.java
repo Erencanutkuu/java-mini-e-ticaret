@@ -1,0 +1,18 @@
+package com.example.minieticaret.common.exception;
+
+public enum ApiErrorCode {
+    VALIDATION_ERROR,
+    CONSTRAINT_VIOLATION,
+    DATA_INTEGRITY,
+    INVALID_ARGUMENT,
+    HTTP_ERROR,
+    NOT_FOUND,
+    FORBIDDEN,
+    INTERNAL_ERROR,
+    ORDER_NOT_FOUND,
+    USER_NOT_FOUND,
+    ADDRESS_NOT_FOUND,
+    STOCK_INSUFFICIENT,
+    ORDER_INVALID_TRANSITION,
+    PAYMENT_NOT_FOUND
+}

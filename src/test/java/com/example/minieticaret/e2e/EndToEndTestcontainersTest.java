@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -33,6 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("testcontainers")
 @ContextConfiguration(initializers = EndToEndTestcontainersTest.Initializer.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@DisabledIfEnvironmentVariable(named = "CI", matches = "true", disabledReason = "Skip Testcontainers suite on CI without Docker privileges")
 class EndToEndTestcontainersTest {
 
     @Container

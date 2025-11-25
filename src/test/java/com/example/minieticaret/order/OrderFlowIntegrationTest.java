@@ -20,6 +20,7 @@ import com.example.minieticaret.order.dto.CheckoutRequest;
 import com.example.minieticaret.order.dto.OrderResponse;
 import com.example.minieticaret.order.repository.OrderRepository;
 import com.example.minieticaret.order.service.OrderService;
+import com.example.minieticaret.payment.domain.Payment;
 import com.example.minieticaret.payment.domain.PaymentStatus;
 import com.example.minieticaret.payment.repository.PaymentRepository;
 import com.example.minieticaret.payment.service.PaymentService;
@@ -69,7 +70,8 @@ class OrderFlowIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        Role userRole = roleRepository.save(Role.builder().name(RoleName.USER).build());
+        Role userRole = roleRepository.findByName(RoleName.USER)
+                .orElseGet(() -> roleRepository.save(Role.builder().name(RoleName.USER).build()));
 
         User user = User.builder()
                 .email("test@example.com")
@@ -118,8 +120,9 @@ class OrderFlowIntegrationTest {
 
         OrderResponse captured = paymentService.capturePayment(checkout.id());
         assertThat(captured.status()).isEqualTo(OrderStatus.PAID);
-        assertThat(paymentRepository.findByOrder(orderRepository.findById(checkout.id()).orElseThrow())
-                .orElseThrow().getStatus()).isEqualTo(PaymentStatus.CAPTURED);
+        Payment payment = paymentRepository.findByOrder(orderRepository.findById(checkout.id()).orElseThrow())
+                .orElseThrow();
+        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.CAPTURED);
 
         OrderResponse refunded = paymentService.refundPayment(checkout.id());
         assertThat(refunded.status()).isEqualTo(OrderStatus.REFUNDED);

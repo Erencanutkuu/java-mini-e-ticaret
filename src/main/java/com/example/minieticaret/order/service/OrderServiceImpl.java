@@ -19,6 +19,7 @@ import com.example.minieticaret.order.dto.OrderResponse;
 import com.example.minieticaret.order.mapper.OrderMapper;
 import com.example.minieticaret.order.port.OrderRepositoryPort;
 import com.example.minieticaret.inventory.port.InventoryPort;
+import com.example.minieticaret.payment.port.PaymentProviderPort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,6 +42,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderPricingService orderPricingService;
     private final OrderPaymentInitializer orderPaymentInitializer;
     private final OrderPaymentStatusService orderPaymentStatusService;
+    private final PaymentProviderPort paymentProvider;
 
     public OrderServiceImpl(CartRepository cartRepository,
                             CartItemRepository cartItemRepository,
@@ -51,7 +53,8 @@ public class OrderServiceImpl implements OrderService {
                             OrderMapper orderMapper,
                             OrderPricingService orderPricingService,
                             OrderPaymentInitializer orderPaymentInitializer,
-                            OrderPaymentStatusService orderPaymentStatusService) {
+                            OrderPaymentStatusService orderPaymentStatusService,
+                            PaymentProviderPort paymentProvider) {
         this.cartRepository = cartRepository;
         this.cartItemRepository = cartItemRepository;
         this.addressRepository = addressRepository;
@@ -62,6 +65,7 @@ public class OrderServiceImpl implements OrderService {
         this.orderPricingService = orderPricingService;
         this.orderPaymentInitializer = orderPaymentInitializer;
         this.orderPaymentStatusService = orderPaymentStatusService;
+        this.paymentProvider = paymentProvider;
     }
 
     @Override
@@ -132,6 +136,8 @@ public class OrderServiceImpl implements OrderService {
         if ((status == OrderStatus.CANCELLED || status == OrderStatus.REFUNDED)
                 && previous != OrderStatus.CANCELLED && previous != OrderStatus.REFUNDED) {
             inventoryService.releaseForOrder(order);
+            // ödeme pending/captured ise iptalde failure, iade senkronizasyonu provider tarafında yapılır
+            paymentProvider.refund(order);
         }
 
         // Ödeme durumunu güncelle (mock)

@@ -1,59 +1,64 @@
 # Java Spring Boot Mini E-Ticaret API
 
-Spring Boot 3, Java 17 ve PostgreSQL kullanan mini e-ticaret REST API iskeleti. JWT güvenliği, Flyway migration, Testcontainers ve Docker Compose hazırdır.
+Spring Boot 3 (Java 17) ile yazılmış, PostgreSQL/Flyway/JWT/Testcontainers/Docker Compose hazır gelen mini e-ticaret backend’i. Katalog, sepet, sipariş, mock ödeme akışları ve basit bir React tabanlı test paneli içerir.
 
-## Hızlı Başlangıç
+## Özellikler
+- JWT tabanlı kimlik doğrulama (register/login/refresh), `USER`/`ADMIN` rolleri
+- Katalog (kategori/ürün), sepet, sipariş ve mock ödeme uçları
+- Flyway migration (PostgreSQL), H2 profilli hızlı testler
+- Testcontainers ile uçtan uca senaryo (Docker varsa)
+- React test paneli (tarayıcıdan login/kategori/ürün akışı) ve Swagger UI için hazır yapı
+- Dockerfile + docker-compose ile tek komutla çalıştırma
+
+## Hızlı Başlangıç (Docker Compose)
 ```bash
-cp .env.example .env
-mvn clean package
+cp .env.example .env            # SECRET ve DB şifrelerini güncelle
 docker compose up --build
+# API: http://localhost:8080
+# React test paneli: http://localhost:8080/
+# Swagger (springdoc eklerken): http://localhost:8080/swagger-ui.html
 ```
 
-Lokal profil için uygulama `http://localhost:8080` adresinde ayağa kalkar, Swagger UI `http://localhost:8080/swagger-ui.html`.
-
-Varsayılan DB bilgileri (PostgreSQL):
-- Host: `localhost`
-- Port: `5432`
-- DB: `ecommerce_db`
-- Kullanıcı: `postgres`
-- Şifre: `123456789`
-
-JWT için `.env` içinde `JWT_SECRET` en az 32 karakter olmalı (örn. `super-secret-key-change-me-32-chars-min`).
-
-## Mimari Notlar
-- Katmanlar paket bazlı: `auth`, `catalog`, `cart`, `order`, `payment`, `inventory`, `common` (ileride eklenecek).
-- Veritabanı: PostgreSQL. Flyway migration klasörü `src/main/resources/db/migration`.
-- Konfigürasyon: `application.yml` profilleri `local/dev/prod`.
-- Build/Test: Maven, JUnit 5, Testcontainers (PostgreSQL).
-- Gözlemlenebilirlik: Actuator `/health`, `/metrics`. OpenAPI springdoc.
-- Güvenlik: `/api/auth/**` serbest; `/api/catalog/**` GET istekleri serbest; diğer `/api/**` JWT ile korunur. `/api/admin/**` için `ROLE_ADMIN` gerekir. BCrypt encoder ve JWT filtreleri hazır.
-- CORS/Rate limit: `app.cors.*` ve `app.ratelimit.limit-per-minute` config üzerinden yönetilir; varsayılan 100 istek/dk, tüm origin’ler açık (prod için kısıtlayın).
-
-## Faydalı Komutlar
-- Derleme ve test: `mvn verify`
-- Sadece derleme (test yok): `mvn package -DskipTests`
-- Docker üzerinden çalıştırma: `docker compose up --build`
-
-## Auth Akışı (JWT)
-- Endpointler: `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/refresh`
-- Varsayılan roller Flyway seed ile gelir (`USER`, `ADMIN`); başlangıçta kullanıcı yok, `register` ile oluşturulur.
-- Token tipi `Bearer`. Refresh token ile yeni access token alınabilir.
-
-## Katalog Endpointleri
-- Kategoriler: `GET /api/catalog/categories`, `GET /api/catalog/categories/{slug}` (public); `POST/PUT/DELETE /api/catalog/categories` (admin).
-- Ürünler: `GET /api/catalog/products` (opsiyonel `categoryId` query param), `GET /api/catalog/products/{id}`, `GET /api/catalog/products/sku/{sku}` (public); `POST/PUT/DELETE /api/catalog/products` (admin).
-
-## Sepet, Adres, Sipariş Endpointleri
-- Sepet: `GET /api/cart`, `POST /api/cart/items`, `PUT /api/cart/items/{itemId}`, `DELETE /api/cart/items/{itemId}`, `DELETE /api/cart/items` (JWT zorunlu).
-- Adres: `GET /api/customer/addresses`, `POST /api/customer/addresses`, `PUT /api/customer/addresses/{id}`, `DELETE /api/customer/addresses/{id}` (JWT zorunlu, kullanıcıya ait kontrolü var).
-- Sipariş: `POST /api/orders/checkout` (sepeti siparişe dönüştürür), `GET /api/orders` (kullanıcı siparişleri), `GET /api/orders/admin?status=` ve `PUT /api/orders/admin/{orderId}/status` (admin).
-- Mock Ödeme: `POST /api/payments/mock/{orderId}/capture`, `POST /api/payments/mock/{orderId}/refund` (admin). Capture siparişi `PAID`, refund `REFUNDED` yapar; stok iadesi refund/cancel’da yapılır.
+## Lokal Geliştirme
+```bash
+cp .env.example .env    # gerçek SECRET/şifreleri yaz
+./mvnw -DskipTests package
+./mvnw spring-boot:run
+# API: http://localhost:8080
+```
 
 ## Testler
-- Hızlı test: `./mvnw -B test` (H2, Flyway kapalı test profili; OrderFlowIntegrationTest + AuthFlowMockMvcTest).
-- Testcontainers E2E (Docker gerekli): `./mvnw -B test -Dtest=EndToEndTestcontainersTest` (Postgres container, checkout→capture→refund akışı). Docker yoksa test skip edilir (`@Testcontainers(disabledWithoutDocker = true)`).
+```bash
+# Hızlı test (H2, Flyway kapalı test profili)
+./mvnw test
 
-## Konfig Notları
-- Prod/Dev: `spring.jpa.hibernate.ddl-auto=validate`, `open-in-view=false`, Flyway zorunlu.
-- JWT: `.env` / ortam değişkeniyle `JWT_SECRET` en az 32 karakter olmalı.
-- Rate limit/CORS: `RATE_LIMIT_PER_MINUTE`, `app.cors.*` ile profil bazlı kısıtlayın (prod’da origin/metod/header’ları daraltın).
+# Uçtan uca Testcontainers (Docker gerekir; CI'de otomatik skip)
+./mvnw -Dtest=EndToEndTestcontainersTest test
+```
+
+## Kullanım Notları
+- Varsayılan DB: `ecommerce_db` / `postgres` / `change-me` (lokalde .env’den değiştir).
+- JWT için `.env` içindeki `JWT_SECRET` en az 32 karakter olmalı.
+- Güvenlik: `/api/auth/**` serbest; katalog GET’leri serbest; diğer uçlar JWT ister; `/api/admin/**` için ADMIN rolü gerekir.
+- React test paneli: `http://localhost:8080/` üzerinden login, kategori ve ürün oluşturup listeleyebilirsin.
+
+## Başlıca Endpointler (özet)
+- Auth: `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/refresh`
+- Katalog: `GET /api/catalog/categories|products` (public), `POST/PUT/DELETE` (ADMIN)
+- Sepet: `GET/POST/PUT/DELETE /api/cart/**` (JWT)
+- Sipariş: `POST /api/orders/checkout`, `GET /api/orders` (JWT), admin status güncelleme uçları
+- Mock ödeme: `POST /api/payments/mock/{orderId}/capture|refund` (ADMIN)
+
+## Yapı & Konfig
+- Flyway migration: `src/main/resources/db/migration`
+- Profiller: `local`, `test`, `testcontainers` (CI’de Docker yoksa E2E skip edilir)
+- Rate limit/CORS: `app.ratelimit.*`, `app.cors.*` (prod’da kısıtlayın)
+
+## Yol Haritası (öneri)
+- Swagger/OpenAPI springdoc entegrasyonu
+- Lint/format ve coverage raporu (CI)
+- Prod odaklı CORS/ratelimit ayarları ve refresh token revocation
+- Basit sepet/checkout akışını da gösteren küçük React bileşenleri
+
+## Lisans
+Bu proje MIT lisansı ile lisanslanmıştır. Ayrıntılar için `LICENSE` dosyasına bakın.

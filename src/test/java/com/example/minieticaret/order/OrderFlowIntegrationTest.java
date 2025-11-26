@@ -17,6 +17,7 @@ import com.example.minieticaret.payment.domain.PaymentStatus;
 import com.example.minieticaret.payment.repository.PaymentRepository;
 import com.example.minieticaret.payment.service.PaymentService;
 import com.example.minieticaret.testsupport.TestDataFactory;
+import com.example.minieticaret.catalog.repository.ProductRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,6 +51,8 @@ class OrderFlowIntegrationTest {
     private PaymentRepository paymentRepository;
     @Autowired
     private OrderRepository orderRepository;
+    @Autowired
+    private ProductRepository productRepository;
 
     private UUID userId;
     private UUID productId;

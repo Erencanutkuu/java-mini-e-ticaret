@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Güvenlik bildirimi
+    url: mailto:example-security@example.com
+    about: Güvenlik açıklarını bu kanaldan bildir.

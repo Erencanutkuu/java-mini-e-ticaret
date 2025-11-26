@@ -18,10 +18,6 @@ import com.example.minieticaret.order.dto.CheckoutRequest;
 import com.example.minieticaret.order.dto.OrderResponse;
 import com.example.minieticaret.order.mapper.OrderMapper;
 import com.example.minieticaret.order.port.OrderRepositoryPort;
-import com.example.minieticaret.payment.domain.Payment;
-import com.example.minieticaret.payment.domain.PaymentProvider;
-import com.example.minieticaret.payment.domain.PaymentStatus;
-import com.example.minieticaret.payment.port.PaymentRepositoryPort;
 import com.example.minieticaret.inventory.port.InventoryPort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -30,7 +26,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -41,26 +36,32 @@ public class OrderServiceImpl implements OrderService {
     private final AddressRepository addressRepository;
     private final UserRepository userRepository;
     private final OrderRepositoryPort orderRepository;
-    private final PaymentRepositoryPort paymentRepository;
     private final InventoryPort inventoryService;
     private final OrderMapper orderMapper;
+    private final OrderPricingService orderPricingService;
+    private final OrderPaymentInitializer orderPaymentInitializer;
+    private final OrderPaymentStatusService orderPaymentStatusService;
 
     public OrderServiceImpl(CartRepository cartRepository,
                             CartItemRepository cartItemRepository,
                             AddressRepository addressRepository,
                             UserRepository userRepository,
                             OrderRepositoryPort orderRepository,
-                            PaymentRepositoryPort paymentRepository,
                             InventoryPort inventoryService,
-                            OrderMapper orderMapper) {
+                            OrderMapper orderMapper,
+                            OrderPricingService orderPricingService,
+                            OrderPaymentInitializer orderPaymentInitializer,
+                            OrderPaymentStatusService orderPaymentStatusService) {
         this.cartRepository = cartRepository;
         this.cartItemRepository = cartItemRepository;
         this.addressRepository = addressRepository;
         this.userRepository = userRepository;
         this.orderRepository = orderRepository;
-        this.paymentRepository = paymentRepository;
         this.inventoryService = inventoryService;
         this.orderMapper = orderMapper;
+        this.orderPricingService = orderPricingService;
+        this.orderPaymentInitializer = orderPaymentInitializer;
+        this.orderPaymentStatusService = orderPaymentStatusService;
     }
 
     @Override
@@ -87,29 +88,10 @@ public class OrderServiceImpl implements OrderService {
                 .items(new ArrayList<>())
                 .build();
 
-        BigDecimal total = BigDecimal.ZERO;
-        for (CartItem cartItem : cart.getItems()) {
-            OrderItem oi = OrderItem.builder()
-                    .order(order)
-                    .product(cartItem.getProduct())
-                    .productNameSnapshot(cartItem.getProduct().getName())
-                    .unitPrice(cartItem.getPriceSnapshot())
-                    .quantity(cartItem.getQuantity())
-                    .currency(cartItem.getCurrency())
-                    .build();
-            order.getItems().add(oi);
-            total = total.add(cartItem.getPriceSnapshot().multiply(BigDecimal.valueOf(cartItem.getQuantity())));
-        }
-        order.setTotal(total);
+        orderPricingService.applyItemsAndCalculateTotal(order, cart.getItems());
 
         Order saved = orderRepository.save(order);
-        // Mock ödeme kaydı oluştur
-        Payment payment = Payment.builder()
-                .order(saved)
-                .provider(PaymentProvider.MOCK)
-                .status(PaymentStatus.PENDING)
-                .build();
-        paymentRepository.save(payment);
+        orderPaymentInitializer.createPendingPayment(saved);
 
         // Sepeti temizle
         cartItemRepository.deleteByCart(cart);
@@ -153,7 +135,7 @@ public class OrderServiceImpl implements OrderService {
         }
 
         // Ödeme durumunu güncelle (mock)
-        updatePayment(order, status);
+        orderPaymentStatusService.syncPaymentWithStatus(order, status);
 
         return orderMapper.toResponse(order);
     }
@@ -176,22 +158,5 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException(ApiErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN, "Adres size ait degil");
         }
         return address;
-    }
-
-    private void updatePayment(Order order, OrderStatus status) {
-        Optional<Payment> paymentOpt = paymentRepository.findByOrder(order);
-        if (paymentOpt.isEmpty()) {
-            return;
-        }
-        Payment payment = paymentOpt.get();
-        if (status == OrderStatus.PAID || status == OrderStatus.SHIPPED) {
-            payment.setStatus(PaymentStatus.CAPTURED);
-            payment.setPaidAt(java.time.Instant.now());
-        } else if (status == OrderStatus.REFUNDED) {
-            payment.setStatus(PaymentStatus.REFUNDED);
-        } else if (status == OrderStatus.CANCELLED) {
-            payment.setStatus(PaymentStatus.FAILED);
-        }
-        paymentRepository.save(payment);
     }
 }

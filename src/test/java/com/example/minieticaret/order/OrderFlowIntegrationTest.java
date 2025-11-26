@@ -1,18 +1,10 @@
 package com.example.minieticaret.order;
 
-import com.example.minieticaret.auth.domain.Role;
 import com.example.minieticaret.auth.domain.RoleName;
-import com.example.minieticaret.auth.domain.User;
-import com.example.minieticaret.auth.domain.UserStatus;
-import com.example.minieticaret.auth.repository.RoleRepository;
-import com.example.minieticaret.auth.repository.UserRepository;
 import com.example.minieticaret.cart.dto.CartItemRequest;
 import com.example.minieticaret.cart.service.CartService;
 import com.example.minieticaret.catalog.domain.Category;
 import com.example.minieticaret.catalog.domain.Product;
-import com.example.minieticaret.catalog.domain.ProductStatus;
-import com.example.minieticaret.catalog.repository.CategoryRepository;
-import com.example.minieticaret.catalog.repository.ProductRepository;
 import com.example.minieticaret.customer.dto.AddressRequest;
 import com.example.minieticaret.customer.service.AddressService;
 import com.example.minieticaret.order.domain.OrderStatus;
@@ -24,6 +16,7 @@ import com.example.minieticaret.payment.domain.Payment;
 import com.example.minieticaret.payment.domain.PaymentStatus;
 import com.example.minieticaret.payment.repository.PaymentRepository;
 import com.example.minieticaret.payment.service.PaymentService;
+import com.example.minieticaret.testsupport.TestDataFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,13 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class OrderFlowIntegrationTest {
 
     @Autowired
-    private RoleRepository roleRepository;
-    @Autowired
-    private UserRepository userRepository;
-    @Autowired
-    private CategoryRepository categoryRepository;
-    @Autowired
-    private ProductRepository productRepository;
+    private TestDataFactory testDataFactory;
     @Autowired
     private AddressService addressService;
     @Autowired
@@ -70,36 +57,13 @@ class OrderFlowIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        Role userRole = roleRepository.findByName(RoleName.USER)
-                .orElseGet(() -> roleRepository.save(Role.builder().name(RoleName.USER).build()));
+        testDataFactory.ensureRole(RoleName.USER);
+        var user = testDataFactory.ensureUser("test@example.com", "Test", "User", "pw", Set.of(RoleName.USER));
+        userId = user.getId();
 
-        User user = User.builder()
-                .email("test@example.com")
-                .passwordHash("pw")
-                .firstName("Test")
-                .lastName("User")
-                .status(UserStatus.ACTIVE)
-                .roles(Set.of(userRole))
-                .build();
-        userId = userRepository.save(user).getId();
-
-        Category category = categoryRepository.save(Category.builder()
-                .name("Elektronik")
-                .slug("elektronik")
-                .build());
-
-        Product product = Product.builder()
-                .name("Kulaklik")
-                .description("Test urun")
-                .price(new BigDecimal("100.00"))
-                .currency("TRY")
-                .sku("SKU-1")
-                .category(category)
-                .stockQuantity(10)
-                .status(ProductStatus.ACTIVE)
-                .images(new java.util.ArrayList<>(List.of("http://image")))
-                .build();
-        productId = productRepository.save(product).getId();
+        Category category = testDataFactory.ensureCategory("Elektronik", "elektronik");
+        Product product = testDataFactory.ensureProduct("SKU-1", category, new BigDecimal("100.00"), "TRY", 10);
+        productId = product.getId();
 
         addressId = addressService.create(
                 new AddressRequest("Line1", null, "Istanbul", "TR", "34000", "555"),

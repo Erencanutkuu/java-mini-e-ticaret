@@ -1,8 +1,7 @@
 package com.example.minieticaret.auth;
 
-import com.example.minieticaret.auth.domain.Role;
 import com.example.minieticaret.auth.domain.RoleName;
-import com.example.minieticaret.auth.repository.RoleRepository;
+import com.example.minieticaret.testsupport.TestDataFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,11 +31,11 @@ class AuthFlowMockMvcTest {
     private ObjectMapper objectMapper;
 
     @Autowired
-    private RoleRepository roleRepository;
+    private TestDataFactory testDataFactory;
 
     @BeforeEach
     void seedRole() {
-        roleRepository.save(Role.builder().name(RoleName.USER).build());
+        testDataFactory.ensureRole(RoleName.USER);
     }
 
     @Test

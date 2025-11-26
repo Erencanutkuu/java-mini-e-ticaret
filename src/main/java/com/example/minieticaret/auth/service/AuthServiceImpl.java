@@ -10,6 +10,9 @@ import com.example.minieticaret.auth.dto.RefreshRequest;
 import com.example.minieticaret.auth.dto.RegisterRequest;
 import com.example.minieticaret.auth.repository.RoleRepository;
 import com.example.minieticaret.auth.repository.UserRepository;
+import com.example.minieticaret.common.exception.ApiErrorCode;
+import com.example.minieticaret.common.exception.BusinessException;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -46,8 +49,7 @@ public class AuthServiceImpl implements AuthService {
             throw new IllegalArgumentException("Email kullaniliyor");
         }
 
-        Role userRole = roleRepository.findByName(RoleName.USER)
-                .orElseThrow(() -> new IllegalStateException("USER rolu bulunamadi"));
+        Role userRole = findRole(RoleName.USER);
 
         User user = User.builder()
                 .email(request.email())
@@ -76,7 +78,7 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new IllegalArgumentException("Kullanici bulunamadi"));
 
         if (!UserStatus.ACTIVE.equals(user.getStatus())) {
-            throw new IllegalArgumentException("Kullanici aktif degil");
+            throw new BusinessException(ApiErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN, "Kullanici aktif degil");
         }
 
         return buildTokens(user);
@@ -98,7 +100,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         if (!UserStatus.ACTIVE.equals(user.getStatus())) {
-            throw new IllegalArgumentException("Kullanici aktif degil");
+            throw new BusinessException(ApiErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN, "Kullanici aktif degil");
         }
 
         return buildTokens(user);
@@ -108,5 +110,10 @@ public class AuthServiceImpl implements AuthService {
         String accessToken = jwtService.generateAccessToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);
         return AuthResponse.bearer(accessToken, refreshToken);
+    }
+
+    private Role findRole(RoleName name) {
+        return roleRepository.findByName(name)
+                .orElseThrow(() -> new IllegalStateException(name + " rolu bulunamadi"));
     }
 }

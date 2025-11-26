@@ -16,7 +16,7 @@ cp .env.example .env            # SECRET ve DB şifrelerini güncelle
 docker compose up --build
 # API: http://localhost:8080
 # React test paneli: http://localhost:8080/
-# Swagger (springdoc eklerken): http://localhost:8080/swagger-ui.html
+# Swagger UI: http://localhost:8080/swagger-ui.html
 ```
 
 ## Lokal Geliştirme
@@ -53,9 +53,9 @@ cp .env.example .env    # gerçek SECRET/şifreleri yaz
 - Flyway migration: `src/main/resources/db/migration`
 - Profiller: `local`, `test`, `testcontainers` (CI’de Docker yoksa E2E skip edilir)
 - Rate limit/CORS: `app.ratelimit.*`, `app.cors.*` (prod’da kısıtlayın)
+- OpenAPI/Swagger: `springdoc-openapi-starter-webmvc-ui`, UI `/swagger-ui.html`
 
 ## Yol Haritası (öneri)
-- Swagger/OpenAPI springdoc entegrasyonu
 - Lint/format ve coverage raporu (CI)
 - Prod odaklı CORS/ratelimit ayarları ve refresh token revocation
 - Basit sepet/checkout akışını da gösteren küçük React bileşenleri

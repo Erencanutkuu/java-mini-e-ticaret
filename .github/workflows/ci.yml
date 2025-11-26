@@ -20,5 +20,24 @@ jobs:
           java-version: 17
           cache: maven
 
-      - name: Build (skip tests in CI)
+      - name: Build (skip tests)
         run: mvn -B -DskipTests package
+
+  tests:
+    runs-on: ubuntu-latest
+    needs: build
+    env:
+      CI: "true"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: maven
+
+      - name: Run unit/integration tests (Docker yoksa Testcontainers skip)
+        run: mvn -B test
